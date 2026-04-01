@@ -20,7 +20,7 @@ jobs:
 
           docker run -d \
             --name my-app \
-            -p 8080:8080 \ 
+            -p 8080:8080 \
             --add-host=host.docker.internal:host-gateway \
             -e DB_HOST=host.docker.internal \
             -e DB_PORT=5432 \

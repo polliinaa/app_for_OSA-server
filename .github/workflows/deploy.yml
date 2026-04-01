@@ -1,0 +1,40 @@
+name: CI/CD Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@naster
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER}}
+          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            mkdir -p ~/app && cd ~/app
+
+            if [ -d ".git" ]; then git pull origin main; else git clone https://github.com/polliinaa/app_for_OSA-server . ; fi
+
+            docker build -t my-app .
+
+            docker stop my-app || true
+            docker rm my-app || true
+
+            docker run -d \
+              --name my-app \
+              -p 8080:8080 \ 
+              --add-host=host.docker.internal:host-gateway \
+              -e DB_HOST=host.docker.internal \
+              -e DB_PORT=5432 \
+              -e DB_USER=postgres \
+              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e DB_NAME=app_db \
+              my-app
